@@ -1,0 +1,9 @@
+numpy
+matplotlib
+pandas
+pandas_datareader
+sklearn
+keras
+tensorflow
+yfinance
+backtesting
