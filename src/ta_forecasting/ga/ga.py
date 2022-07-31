@@ -1,63 +1,67 @@
-from numpy.random import randint
-from numpy.random import rand
+import numpy as np
 
-class GeneticAlgorithm():
+
+class GeneticAlgorithm:
+
+    def __init__(self, dna_size, pop_size, cross_rate, mutation_rate):
+        self.dna_size = dna_size
+        self.pop_size = pop_size
+        self.cross_rate = cross_rate
+        self.mutation_rate = mutation_rate
+
     @staticmethod
     def onemax(x):
         return -sum(x)
-    
-    @staticmethod
-    def selection(pop, scores, k=3):
-        selection_ix = randint(len(pop))
-        for ix in randint(0, len(pop), k-1):
+
+    def selection(self, populations, scores, k=3):
+        selection_ix = np.random.randint(self.dna_size)
+        for ix in np.random.randint(0, self.dna_size, k - 1):
             if scores[ix] < scores[selection_ix]:
                 selection_ix = ix
-        return pop[selection_ix]
-    
-    @staticmethod
-    def crossover(p1, p2, r_cross):
-        c1, c2 = p1.copy(), p2.copy()
-        if rand() < r_cross:
-            pt = randint(1, len(p1)-2)
-            c1 = p1[:pt] + p2[pt:]
-            c2 = p2[:pt] + p1[pt:]
-        return [c1, c2]
-    
-    @staticmethod
-    def mutation(bitstring, r_mut):
-        for i in range(len(bitstring)):
-            if rand() < r_mut:
+        return populations[selection_ix]
+
+    def crossover(self, parent1, parent2):
+        child1, child2 = parent1.copy(), parent2.copy()
+        if np.random.rand() < self.cross_rate:
+            pt = np.random.randint(1, self.dna_size - 2)
+            child1 = parent1[:pt] + parent2[pt:]
+            child2 = parent2[:pt] + parent1[pt:]
+        return [child1, child2]
+
+    def mutation(self, bitstring):
+        for i in range(self.dna_size):
+            if np.random.rand() < self.mutation_rate:
                 bitstring[i] = 1 - bitstring[i]
-    
-    @staticmethod
-    def genetic_algorithm(objective, n_bits, n_iter, n_pop, r_cross, r_mut):
-        pop = [randint(0, 2, n_bits).tolist() for _ in range(n_pop)]
-        best, best_eval = 0, objective(pop[0])
-        for gen in range(n_iter):
-            scores = [objective(c) for c in pop]
-            for i in range(n_pop):
-                if scores[i] < best_eval:
-                    best, best_eval = pop[i], scores[i]
-                    print(">%d, new best f(%s) = %.3f" % (gen,  pop[i], scores[i]))
-            selected = [GeneticAlgorithm.selection(pop, scores) for _ in range(n_pop)]
-            children = list()
-            for i in range(0, n_pop, 2):
-                p1, p2 = selected[i], selected[i+1]
-                for c in GeneticAlgorithm.crossover(p1, p2, r_cross):
-                    GeneticAlgorithm.mutation(c, r_mut)
-                    children.append(c)
-            pop = children
-        return [best, best_eval]
- 
+
+    def genetic_algorithm(self, objective, n_iter):
+        populations = [np.random.randint(0, 2, self.dna_size).tolist() for _ in range(self.pop_size)]
+        best_pop, best_score = populations[0], objective(populations[0])
+        for generation_number in range(n_iter):
+            scores = [objective(p) for p in populations]
+            for i in range(self.pop_size):
+                if scores[i] < best_score:
+                    best_pop, best_score = populations[i], scores[i]
+                    print(">%d, new best f(%s) = %.3f" % (generation_number, populations[i], scores[i]))
+            selected = [self.selection(populations, scores) for _ in range(self.pop_size)]
+            children = []
+            for i in range(0, self.pop_size, 2):
+                parent1, parent2 = selected[i], selected[i + 1]
+                for child in self.crossover(parent1, parent2):
+                    self.mutation(child)
+                    children.append(child)
+            populations = children
+        return [best_pop, best_score]
+
+
 if __name__ == '__main__':
     n_iter = 100
     n_bits = 20
     n_pop = 100
     r_cross = 0.9
     r_mut = 1.0 / float(n_bits)
-    
-    best, score = GeneticAlgorithm.genetic_algorithm(
-        GeneticAlgorithm.onemax, n_bits, n_iter, n_pop, r_cross, r_mut
+
+    best, score = GeneticAlgorithm(n_bits, n_pop, r_cross, r_mut).genetic_algorithm(
+        GeneticAlgorithm.onemax, n_iter,
     )
 
     print('Done!')
